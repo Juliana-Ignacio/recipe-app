@@ -3,16 +3,16 @@ import { Client, Databases, Storage, ID } from "appwrite";
 
 // Initialize Appwrite client
 const client = new Client()
-  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT) // e.g., https://fra.cloud.appwrite.io/v1
-  .setProject(import.meta.env.VITE_APPWRITE_PROJECT);  // e.g., 692e75550014928a450b
+  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
+  .setProject(import.meta.env.VITE_APPWRITE_PROJECT);
 
 const databases = new Databases(client);
 const storage = new Storage(client);
 
-const RecipeForm = () => {
+const RecipeForm = ({ onNewRecipe }) => {
   const [title, setTitle] = useState("");
   const [ingredients, setIngredients] = useState("");
-  const [procedure, setProcedure] = useState(""); // New field
+  const [procedure, setProcedure] = useState("");
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -23,35 +23,50 @@ const RecipeForm = () => {
     setError("");
 
     try {
-      // 1️⃣ Upload image to Appwrite Storage if provided
+      // 1️⃣ Upload image to Appwrite Storage
       let fileId = null;
+      let imageUrl = null;
+
       if (image) {
         const uploadResult = await storage.createFile(
-          import.meta.env.VITE_APPWRITE_BUCKET, // bucket ID
-          ID.unique(), // generate unique ID for file
+          import.meta.env.VITE_APPWRITE_BUCKET,
+          ID.unique(),
           image
         );
         fileId = uploadResult.$id;
+
+        // Get a public URL for the image
+        imageUrl = await storage.getFileView(
+          import.meta.env.VITE_APPWRITE_BUCKET,
+          fileId
+        );
       }
 
       // 2️⃣ Create document in Appwrite Database
-      await databases.createDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE, // database ID
-        "recipeitems",                           // collection ID
-        ID.unique(),                              // document ID
+      const document = await databases.createDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE,
+        "recipeitems",
+        ID.unique(),
         {
           title,
           ingredients,
-          procedure,     // ✅ Add procedure here
-          image: fileId ? fileId : null
+          procedure,
+          image: fileId || null,
         }
       );
 
-      // Clear form after successful upload
+      // Include imageUrl for immediate display
+      const newRecipe = { ...document, imageUrl };
+
+      // Clear form
       setTitle("");
       setIngredients("");
-      setProcedure(""); // Clear procedure field
+      setProcedure("");
       setImage(null);
+
+      // Callback to update recipe list in parent
+      if (onNewRecipe) onNewRecipe(newRecipe);
+
       alert("Recipe uploaded successfully!");
     } catch (err) {
       console.error("Upload error:", err);
@@ -62,7 +77,7 @@ const RecipeForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} style={{ maxWidth: "600px", margin: "0 auto" }}>
       <div>
         <label>Title:</label>
         <input
@@ -88,7 +103,7 @@ const RecipeForm = () => {
         <textarea
           value={procedure}
           onChange={(e) => setProcedure(e.target.value)}
-          maxLength={10000} // allow longer text for procedure
+          maxLength={10000}
           required
         />
       </div>

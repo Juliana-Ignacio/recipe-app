@@ -1,0 +1,96 @@
+:root {
+  --color-light: #fdfffd;
+  --color-soft-green: #BBC863;
+  --color-mid-green: #658C58;
+  --color-dark-green: #31694E;
+  --color-white: #ffffff;
+  --color-text-dark: #1a1a1a;
+}
+
+body {
+  background-color: var(--color-light);
+  color: var(--color-text-dark);
+  font-family: 'Inter', sans-serif;
+  padding: 20px;
+}
+
+#uploadCard {
+  background: var(--color-white);
+  border-radius: 14px;
+  padding: 20px;
+  max-width: 480px;
+  margin: 0 auto 30px auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.recipe-card {
+  background: var(--color-white);
+  border-radius: 14px;
+  padding: 10px;
+  transition: 0.25s ease;
+  position: relative;
+}
+
+.recipe-card:hover {
+  box-shadow: 0 0 18px rgba(49, 105, 78, 0.45); /* use dark‑green hue for glow */
+  transform: translateY(-4px);
+}
+
+.recipe-img {
+  width: 100%;
+  height: 250px;
+  border-radius: 12px;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+  cursor: pointer;
+}
+
+.recipe-card:hover .recipe-img {
+  transform: scale(1.04);
+}
+
+.recipe-title {
+  background: var(--color-soft-green);
+  padding: 7px 12px;
+  text-align: center;
+  font-weight: 700;
+  margin-top: 8px;
+  border-radius: 6px;
+  color: var(--color-text-dark);
+}
+
+/* Navbar with dark green bottom line */
+.navbar {
+  background-color: rgba(20, 20, 20, 0.35); /* dark transparent */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 3px solid #31694E; /* dark green line */
+}
+
+/* Navbar brand/logo (black text) */
+.navbar .navbar-brand {
+  color: #000 !important;   
+  font-weight: bold;
+}
+
+/* Navbar links (black text) */
+.navbar .nav-link {
+  color: #000 !important;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+/* Hover effect (slightly darker black or sage green) */
+.navbar .nav-link:hover {
+  color: #ffffff !important; /* dark green hover */
+}
+
+.btn-success {
+  background-color: var(--color-mid-green);
+  border-color: var(--color-dark-green);
+}
+
+.btn-success:hover {
+  background-color: var(--color-dark-green);
+  border-color: var(--color-mid-green);
+}

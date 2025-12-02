@@ -1,33 +1,65 @@
-import React from 'react';
-import { databases, storage, ID } from "./appwrite";
+import React, { useEffect, useState } from "react";
+import { Client, Databases, Storage } from "appwrite";
+import RecipeCard from "./RecipeCard";
 
+const client = new Client()
+  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
+  .setProject(import.meta.env.VITE_APPWRITE_PROJECT);
 
-function RecipeModal({ recipe, onClose, onDelete, onEdit }) {
+const databases = new Databases(client);
+const storage = new Storage(client);
+
+const RecipeList = () => {
+  const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      try {
+        const response = await databases.listDocuments(
+          import.meta.env.VITE_APPWRITE_DATABASE,
+          "recipeitems"
+        );
+
+        const recipesWithImages = await Promise.all(
+          response.documents.map(async (doc) => {
+            let imageUrl = null;
+            if (doc.image) {
+              imageUrl = await storage.getFileView(
+                import.meta.env.VITE_APPWRITE_BUCKET,
+                doc.image
+              );
+            }
+            return { ...doc, imageUrl };
+          })
+        );
+
+        setRecipes(recipesWithImages);
+      } catch (err) {
+        console.error("Error fetching recipes:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecipes();
+  }, []);
+
+  if (loading) return <p>Loading recipes...</p>;
+
   return (
-    <div className="modal fade show" style={{ display: 'block' }}>
-      <div className="modal-dialog modal-lg modal-dialog-centered">
-        <div className="modal-content shadow">
-          <div className="modal-body">
-            <img src={recipe.image} className="modal-img mb-3" alt={recipe.title} />
-            <h2 className="fw-bold">{recipe.title}</h2>
-            <h5 className="mt-3">Ingredients</h5>
-            <ul>
-              {(recipe.ingredients || []).map((i, idx) => (
-                <li key={idx}>{i}</li>
-              ))}
-            </ul>
-            <h5 className="mt-3">Procedure</h5>
-            <p>{recipe.steps}</p>
-            <div className="d-flex gap-2 mt-4">
-              <button className="btn btn-primary w-50" onClick={onEdit}>Edit</button>
-              <button className="btn btn-danger w-50" onClick={onDelete}>Delete</button>
-            </div>
-            <button className="btn btn-secondary w-100 mt-3" onClick={onClose}>Close</button>
-          </div>
-        </div>
-      </div>
+    <div className="recipe-list">
+      {recipes.map((recipe) => (
+        <RecipeCard
+          key={recipe.$id}
+          title={recipe.title}
+          ingredients={recipe.ingredients}
+          procedure={recipe.procedure}
+          imageUrl={recipe.imageUrl}
+        />
+      ))}
     </div>
   );
-}
+};
 
-export default RecipeModal;
+export default RecipeList;

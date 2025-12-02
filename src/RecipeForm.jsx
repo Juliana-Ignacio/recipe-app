@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Client, Databases, Storage } from "appwrite";
+import { Client, Databases, Storage, ID } from "appwrite";
 
 // Initialize Appwrite client
 const client = new Client()
@@ -12,6 +12,7 @@ const storage = new Storage(client);
 const RecipeForm = () => {
   const [title, setTitle] = useState("");
   const [ingredients, setIngredients] = useState("");
+  const [procedure, setProcedure] = useState(""); // New field
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,7 +28,7 @@ const RecipeForm = () => {
       if (image) {
         const uploadResult = await storage.createFile(
           import.meta.env.VITE_APPWRITE_BUCKET, // bucket ID
-          "unique()" , // generate unique ID for file
+          ID.unique(), // generate unique ID for file
           image
         );
         fileId = uploadResult.$id;
@@ -37,10 +38,11 @@ const RecipeForm = () => {
       await databases.createDocument(
         import.meta.env.VITE_APPWRITE_DATABASE, // database ID
         "recipeitems",                           // collection ID
-        "unique()",                               // document ID
+        ID.unique(),                              // document ID
         {
           title,
           ingredients,
+          procedure,     // ✅ Add procedure here
           image: fileId ? fileId : null
         }
       );
@@ -48,6 +50,7 @@ const RecipeForm = () => {
       // Clear form after successful upload
       setTitle("");
       setIngredients("");
+      setProcedure(""); // Clear procedure field
       setImage(null);
       alert("Recipe uploaded successfully!");
     } catch (err) {
@@ -69,6 +72,7 @@ const RecipeForm = () => {
           required
         />
       </div>
+
       <div>
         <label>Ingredients:</label>
         <textarea
@@ -78,6 +82,17 @@ const RecipeForm = () => {
           required
         />
       </div>
+
+      <div>
+        <label>Procedure:</label>
+        <textarea
+          value={procedure}
+          onChange={(e) => setProcedure(e.target.value)}
+          maxLength={10000} // allow longer text for procedure
+          required
+        />
+      </div>
+
       <div>
         <label>Image:</label>
         <input
@@ -86,9 +101,11 @@ const RecipeForm = () => {
           onChange={(e) => setImage(e.target.files[0])}
         />
       </div>
+
       <button type="submit" disabled={loading}>
         {loading ? "Uploading..." : "Upload Recipe"}
       </button>
+
       {error && <p style={{ color: "red" }}>{error}</p>}
     </form>
   );

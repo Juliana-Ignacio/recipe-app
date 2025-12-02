@@ -1,104 +1,97 @@
 import React, { useState } from "react";
-import { databases, storage, ID } from "./appwrite";
+import { Client, Databases, Storage } from "appwrite";
 
-function RecipeForm({ addOrUpdateRecipe }) {
+// Initialize Appwrite client
+const client = new Client()
+  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT) // e.g., https://fra.cloud.appwrite.io/v1
+  .setProject(import.meta.env.VITE_APPWRITE_PROJECT);  // e.g., 692e75550014928a450b
+
+const databases = new Databases(client);
+const storage = new Storage(client);
+
+const RecipeForm = () => {
   const [title, setTitle] = useState("");
   const [ingredients, setIngredients] = useState("");
-  const [procedure, setProcedure] = useState("");
-  const [imageFile, setImageFile] = useState(null);
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!title || !ingredients || !procedure) {
-      alert("Please fill all fields!");
-      return;
-    }
-
-    let imageUrl = null;
+    setLoading(true);
+    setError("");
 
     try {
-      // Upload image if selected
-      if (imageFile) {
+      // 1️⃣ Upload image to Appwrite Storage if provided
+      let fileId = null;
+      if (image) {
         const uploadResult = await storage.createFile(
-          "692e78c80002d75d1e70", // Your bucket ID
-          ID.unique(),
-          imageFile
+          import.meta.env.VITE_APPWRITE_BUCKET, // bucket ID
+          "unique()" , // generate unique ID for file
+          image
         );
-        imageUrl = uploadResult.$id; // store the file ID in your document
+        fileId = uploadResult.$id;
       }
 
-      // Create document in Appwrite database
-      const doc = await databases.createDocument(
-        "692e76dc0008790053d6", // Database ID
-        "recipeitems",          // Collection ID
-        ID.unique(),
+      // 2️⃣ Create document in Appwrite Database
+      await databases.createDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE, // database ID
+        "recipeitems",                           // collection ID
+        "unique()",                               // document ID
         {
-          title: title,
-          ingredients: ingredients,
-          procedure: procedure,
-          image: imageUrl,
+          title,
+          ingredients,
+          image: fileId ? fileId : null
         }
       );
 
-      // Update local state
-      addOrUpdateRecipe({
-        id: doc.$id,
-        title: doc.title,
-        ingredients: doc.ingredients,
-        procedure: doc.procedure,
-        image: imageFile ? URL.createObjectURL(imageFile) : null,
-      });
-
-      // Reset form
+      // Clear form after successful upload
       setTitle("");
       setIngredients("");
-      setProcedure("");
-      setImageFile(null);
-      document.getElementById("recipeImgInput").value = "";
-
+      setImage(null);
       alert("Recipe uploaded successfully!");
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Failed to upload recipe. Check console for details.");
+    } catch (err) {
+      console.error("Upload error:", err);
+      setError(err.message || "Something went wrong!");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div id="uploadCard" className="shadow-sm mb-4">
-      <h4 className="text-center mb-3">Upload a Recipe</h4>
-      <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>Title:</label>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Recipe Title"
           required
         />
+      </div>
+      <div>
+        <label>Ingredients:</label>
         <textarea
           value={ingredients}
           onChange={(e) => setIngredients(e.target.value)}
-          placeholder="Ingredients (one per line)"
+          maxLength={5000}
           required
         />
-        <textarea
-          value={procedure}
-          onChange={(e) => setProcedure(e.target.value)}
-          placeholder="Procedure"
-          required
-        />
+      </div>
+      <div>
+        <label>Image:</label>
         <input
           type="file"
-          id="recipeImgInput"
           accept="image/*"
-          onChange={(e) => setImageFile(e.target.files[0])}
+          onChange={(e) => setImage(e.target.files[0])}
         />
-        <button type="submit" className="btn btn-success mt-2 w-100">
-          Upload Recipe
-        </button>
-      </form>
-    </div>
+      </div>
+      <button type="submit" disabled={loading}>
+        {loading ? "Uploading..." : "Upload Recipe"}
+      </button>
+      {error && <p style={{ color: "red" }}>{error}</p>}
+    </form>
   );
-}
+};
 
 export default RecipeForm;

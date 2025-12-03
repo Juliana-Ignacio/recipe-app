@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Client, Databases, Storage, ID } from "appwrite";
 
-// Initialize Appwrite client
 const client = new Client()
   .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
   .setProject(import.meta.env.VITE_APPWRITE_PROJECT);
@@ -23,7 +22,7 @@ const RecipeForm = ({ onNewRecipe }) => {
     setError("");
 
     try {
-      // 1️⃣ Upload image to Appwrite Storage
+      // Upload image to Appwrite Storage
       let fileId = null;
       let imageUrl = null;
 
@@ -42,7 +41,7 @@ const RecipeForm = ({ onNewRecipe }) => {
         );
       }
 
-      // 2️⃣ Create document in Appwrite Database
+      // Create document in Appwrite Database
       const document = await databases.createDocument(
         import.meta.env.VITE_APPWRITE_DATABASE,
         "recipeitems",
